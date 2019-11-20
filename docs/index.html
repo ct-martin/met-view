@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Met Collection Stats</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css" integrity="sha256-D9M5yrVDqFlla7nlELDaYZIpXfFWDytQtiV+TaH6F1I=" crossorigin="anonymous"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.css" integrity="sha256-aa0xaJgmK/X74WM224KMQeNQC2xYKwlAt08oZqjeF0E=" crossorigin="anonymous"/>
+
+    <style type="text/css">
+    body{padding-top:2em;}
+    section,.columns{margin-top:1em;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Met Collection Stats</h1>
+        <p class="subtitle">Last Updated: 18 Nov, 2019</p>
+
+        <div id="stats">Analyzing marvels...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.bundle.min.js" integrity="sha256-TQq84xX6vkwR0Qs1qH5ADkP+MvH0W+9E7TdHJsoIQiM=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+    // Simple Stats Helper
+    const makeSimpleStats = (simpleStats) => {
+        const simpleStatsDiv = document.createElement('div');
+        simpleStatsDiv.classList.add('level');
+        for (const name in simpleStats) {
+            const div1 = document.createElement('div');
+            div1.classList.add('level-item', 'has-text-centered');
+            const div2 = document.createElement('div');
+            const title = document.createElement('p');
+            title.classList.add('heading');
+            title.innerText = name;
+            div2.appendChild(title);
+            const num = document.createElement('p');
+            num.classList.add('title');
+            num.innerText = simpleStats[name];
+            div2.appendChild(num);
+            div1.appendChild(div2);
+            simpleStatsDiv.appendChild(div1);
+        }
+        return simpleStatsDiv;
+    };
+
+    const makeChart = (data, labels, colors, title, legend='right', fontSize=16, inColumn=true, aspectRatio=1.5) => {
+        const chartDiv = document.createElement('div');
+        if(!!inColumn) chartDiv.classList.add('column');
+        const chartCtr = document.createElement('div');
+        chartCtr.classList.add('chart-container');
+        const chartCanvas = document.createElement('canvas');
+
+        const ctx = chartCanvas.getContext('2d');
+        let chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                datasets: [{
+                    data,
+                    backgroundColor: colors,
+                }],
+                labels,
+            },
+            options: {
+                aspectRatio,
+                elements: {
+                    arc: {
+                        borderColor: 'hsl(0,0,5%)',
+                    },
+                },
+                legend: {
+                    display: !!legend,
+                    position: legend,
+                },
+                title: {
+                    display: true,
+                    fontSize,
+                    fontColor: '#363636',
+                    text: title,
+                },
+            },
+        });
+
+        chartCtr.appendChild(chartCanvas);
+        chartDiv.appendChild(chartCtr);
+        return chartDiv;
+    };
+
+    const originalStatsDiv = document.getElementById('stats');
+    fetch('stats.json').then((res) => {
+        if(!res.ok) {
+            statsDiv.innerText = 'Failed to load (returned error)';
+            return;
+        }
+
+        res.json().then((data) => {
+            // The magic happens here
+            // Last updated is done manually when pulling from GitHub for Jupyter
+
+            // Giant try/catch b/c Promises break clean resolving
+            try {
+                // Create wrapping div
+                const statsDiv = document.createElement('div');
+                statsDiv.id = 'stats';
+
+                // Simple numerical stats about collections
+                const simpleStats = {
+                    'Total Objects': new Intl.NumberFormat('en-US', { style: 'decimal' }).format(data.total),
+                    'Cultures': new Intl.NumberFormat('en-US', { style: 'decimal' }).format(data.cultures),
+                    'Departments': data.numDepts,
+                    '% Public Domain': `${Math.round(data.isPublicDomain / data.total * 100, 2)}%`
+                };
+                statsDiv.appendChild(makeSimpleStats(simpleStats));
+
+                // Set up list of departments b/c used often
+                let departments = Object.keys(data.depts);
+
+                let deptColors = [];
+                for (let i = 0; i <= departments.length; i++) { // <= to let us look ahead one
+                    deptColors.push(`hsl(${Math.round(360 / departments.length * i)}deg, 100%, 60%)`);
+                }
+
+                // Charts about entirely of collection
+                let deptSumData = [];
+                for (const name of departments) {
+                    deptSumData.push(data.depts[name].total);
+                }
+
+                statsDiv.appendChild(makeChart(deptSumData, departments, deptColors, 'Objects by Department', 'right', 22, false, 2.5));
+
+                const collectionChartsDiv2 = document.createElement('div');
+                collectionChartsDiv2.classList.add('columns');
+
+                let highlightedData = [];
+                for (const name of departments) {
+                    highlightedData.push(data.depts[name].isHighlight);
+                }
+                collectionChartsDiv2.appendChild(makeChart(highlightedData, departments, deptColors, 'Highlights by Department', false));
+
+                let publicDomainSumData = [];
+                for (const name of departments) {
+                    publicDomainSumData.push(data.depts[name].isPublicDomain);
+                }
+                collectionChartsDiv2.appendChild(makeChart(publicDomainSumData, departments, deptColors, 'Public Domain by Department', false));
+
+                let culturesSumData = [];
+                for (const name of departments) {
+                    //culturesSumData.push(data.depts[name].cultures);
+                    culturesSumData.push(Object.keys(data.depts[name].culturesSimplified).length);
+                }
+                collectionChartsDiv2.appendChild(makeChart(culturesSumData, departments, deptColors, 'Cultures by Department (Simplified)', false));
+
+                statsDiv.appendChild(collectionChartsDiv2);
+
+                // By-collection stats
+                for(let i = 0; i < departments.length; i++) {
+                    const dept = departments[i];
+                    const dColor = deptColors[i];
+                    const dColorless = 'hsl(0deg,0%,30%)';
+                    const dData = data.depts[dept];
+
+                    const dDiv = document.createElement('section');
+                    const title = document.createElement('h2');
+                    title.classList.add('title');
+                    title.innerText = dept;
+                    dDiv.appendChild(title);
+
+                    const dStats = {
+                        'Objects': new Intl.NumberFormat('en-US', { style: 'decimal' }).format(dData.total),
+                        //'% Total Objects': `${Math.round(dData.total / data.total * 100, 2)}%`,
+                        'Cultures': new Intl.NumberFormat('en-US', { style: 'decimal' }).format(dData.cultures),
+                        'Mediums': new Intl.NumberFormat('en-US', { style: 'decimal' }).format(dData.mediums),
+                        'Highlighted': new Intl.NumberFormat('en-US', { style: 'decimal' }).format(dData.isHighlight),
+                    };
+                    dDiv.appendChild(makeSimpleStats(dStats));
+
+                    const dChartsDiv = document.createElement('div');
+                    dChartsDiv.classList.add('columns');
+
+                    const dChartColors = [dColor, dColorless];
+
+                    let dPublicDomainData = [
+                        dData.isPublicDomain,
+                        dData.total - dData.isPublicDomain
+                    ];
+                    dChartsDiv.appendChild(makeChart(dPublicDomainData, ['Public Domain', 'Not Public Domain'], dChartColors, '% Public Domain'));
+
+                    let dCultureLabels = Object.keys(dData.culturesSimplified);
+                    let dCultureData = Object.values(dData.culturesSimplified);
+                    let dCultureColors = dCultureLabels.map((i) => (i == "Unknown" || i == "<1% ea.") ? dColorless : dColor);
+                    dChartsDiv.appendChild(makeChart(dCultureData, dCultureLabels, dCultureColors, 'Objects by Culture (Simplified)'));
+
+                    dDiv.appendChild(dChartsDiv);
+
+                    statsDiv.appendChild(dDiv);
+                }
+
+                // Demo data consistency
+                const bsDiv = document.createElement('section');
+                const bsTitle = document.createElement('h2');
+                bsTitle.classList.add('title');
+                bsTitle.innerText = 'Data "Fun"';
+                bsDiv.appendChild(bsTitle);
+
+                let culturesSumRawData = [];
+                let mediumsSumData = [];
+                for (const name of departments) {
+                    culturesSumRawData.push(data.depts[name].cultures);
+                    mediumsSumData.push(data.depts[name].mediums);
+                }
+
+                const bs1ChartDiv = document.createElement('div');
+                const bs1ChartCtr = document.createElement('div');
+                bs1ChartCtr.classList.add('bs1Chart-container');
+                const bs1ChartCanvas = document.createElement('canvas');
+
+                const bs1Ctx = bs1ChartCanvas.getContext('2d');
+                let bs1Chart = new Chart(bs1Ctx, {
+                    type: 'bar',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'Cultures (Simplified)',
+                                data: culturesSumData,
+                                backgroundColor: deptColors,
+                            },
+                            {
+                                label: 'Cultures (as-is)',
+                                data: culturesSumRawData,
+                                backgroundColor: deptColors,
+                            },
+                        ],
+                        labels: departments,
+                    },
+                    options: {
+                        aspectRatio: 2,
+                        elements: {
+                            arc: {
+                                borderColor: 'hsl(0,0,5%)',
+                            },
+                        },
+                        legend: {
+                            display: true,
+                            position: 'right',
+                        },
+                        title: {
+                            display: true,
+                            fontSize: 18,
+                            fontColor: '#363636',
+                            text: 'Cultures (Simplified) vs. Cultures',
+                        },
+                    },
+                });
+
+                bs1ChartCtr.appendChild(bs1ChartCanvas);
+                bs1ChartDiv.appendChild(bs1ChartCtr);
+
+                bsDiv.appendChild(bs1ChartDiv);
+
+                const bs2ChartDiv = document.createElement('div');
+                const bs2ChartCtr = document.createElement('div');
+                bs2ChartCtr.classList.add('bs2Chart-container');
+                const bs2ChartCanvas = document.createElement('canvas');
+
+                const bs2Ctx = bs2ChartCanvas.getContext('2d');
+                let bs2Chart = new Chart(bs2Ctx, {
+                    type: 'bar',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'Cultures (as-is)',
+                                data: culturesSumRawData,
+                                backgroundColor: deptColors,
+                            },
+                            {
+                                label: 'Mediums (as-is)',
+                                data: mediumsSumData,
+                                backgroundColor: deptColors,
+                            },
+                        ],
+                        labels: departments,
+                    },
+                    options: {
+                        aspectRatio: 2,
+                        elements: {
+                            arc: {
+                                borderColor: 'hsl(0,0,5%)',
+                            },
+                        },
+                        legend: {
+                            display: true,
+                            position: 'right',
+                        },
+                        title: {
+                            display: true,
+                            fontSize: 18,
+                            fontColor: '#363636',
+                            text: 'Cultures vs. Mediums',
+                        },
+                    },
+                });
+
+                bs2ChartCtr.appendChild(bs2ChartCanvas);
+                bs2ChartDiv.appendChild(bs2ChartCtr);
+
+                bsDiv.appendChild(bs2ChartDiv);
+
+                const bsChartsDiv = document.createElement('div');
+                bsChartsDiv.classList.add('columns');
+
+                let objPerCultureData = [];
+                let objPerMediumData = [];
+                for (const name of departments) {
+                    objPerCultureData.push(data.depts[name].cultures / data.depts[name].total);
+                    objPerMediumData.push(data.depts[name].mediums / data.depts[name].total);
+                }
+                bsChartsDiv.appendChild(makeChart(objPerCultureData, departments, deptColors, 'Cultures / Objects'));
+                bsChartsDiv.appendChild(makeChart(objPerMediumData, departments, deptColors, 'Mediums / Objects'));
+
+                bsDiv.appendChild(bsChartsDiv);
+
+                statsDiv.appendChild(bsDiv);
+
+                // Replace loading text with parsed data
+                originalStatsDiv.replaceWith(statsDiv);
+            } catch(e) {
+                console.error(e);
+            }
+        }).catch(() => statsDiv.innerText = 'Failed to load (invalid content)');
+    }).catch(() => statsDiv.innerText = 'Failed to load (connection error)');
+    </script>
+</body>
+</html>
