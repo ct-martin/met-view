@@ -24,6 +24,8 @@ After looking at the `Culture` field I was curious to see what the `Medium` fiel
 
 I'd be interested to look (at a later time) in to trying to process the `Medium` field and also look at the departments which don't use the `Culture` field in case there's another field that's used instead.
 
+I'd also like to include images of a random public-domain highlight for collections, however, the Met's APIs currently block both real-time retreival of this data and loading the image itself.
+
 ## About the Data
 
 Data was downloaded from [https://github.com/metmuseum/openaccess/](https://github.com/metmuseum/openaccess/)
