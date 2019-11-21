@@ -192,6 +192,19 @@
                     let dCultureColors = dCultureLabels.map((i) => (i == "Unknown" || i == "<1% ea.") ? dColorless : dColor);
                     dChartsDiv.appendChild(makeChart(dCultureData, dCultureLabels, dCultureColors, 'Objects by Culture (Simplified)'));
 
+                    /*const dImgDiv = document.createElement('div');
+                    dImgDiv.classList.add('column');
+                    const dImg = document.createElement('img');
+                    const imgRef = dData.pdHighlights[Math.floor(Math.random() * dData.pdHighlights.length)];
+                    fetch(`https://www.metmuseum.org/art/collection/search/${imgRef}`)
+                    .then(response => response.text())
+                    .then(str => (new window.DOMParser()).parseFromString(str, "text/xml"))
+                    .then(data => {
+                        const imgUrl = data.querySelector("meta[property='og:image']").getAttribute('content');
+                        dImg.src = imgUrl;
+                    });
+                    dChartsDiv.appendChild(dImgDiv);*/
+
                     dDiv.appendChild(dChartsDiv);
 
                     statsDiv.appendChild(dDiv);
