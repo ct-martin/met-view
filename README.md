@@ -4,21 +4,15 @@ Interactive visualizations about the Metropolitan Museum of Art's collections. L
 
 View here: https://ct-martin.github.io/met-view/
 
----
-
 ## About the Experience
 
 I wanted to look at collection data in a meaningful manner. I chose the Met collection because the data is easily available for me to use. In particular, I was curious about how much of the Met collection was available in the public domain and seeing if there was anything interesting in the "Highlights" field, which does not have a clear indication of what i means other than being able to search for it on the Met website. To this end, the project looks to `engage` viewers in what the collection holds by `interpret`ing some simple statistics about it. Large numbers and interactive charts, including by-department, are used to accomplish this.
 
----
-
 ## About the Technology
 
-Python & Jupyter Lab were used to process data since they're easy and capable of processing the ~1/4GB dataset that the Met has. Doing this work in the browser would almost definitely crash the page. Python & Jupyter Lab export a JSON file that the web page uses. This tooling is also common in data science.
+[Python](https://www.python.org/) & [Jupyter Lab](https://github.com/jupyterlab/jupyterlab) were used to process data since they're easy and capable of processing the ~1/4GB dataset that the Met has. Doing this work in the browser would almost definitely crash the page. Python & Jupyter Lab export a JSON file that the web page uses. This tooling is also common in data science.
 
-Since this is a web-based project, data display on the page is essentially required to be JavaScript. Bulma & Chart.js were used to build the page. Chart.js in particular is what is used for the interactive charts and does almost all of the work in making those charts. Bulma and Chart.js were chosen purely for the ability to build this web-based experience quickly.
-
----
+Since this is a web-based project, data display on the page is essentially required to be JavaScript. [Bulma](https://bulma.io/) & [Chart.js](https://www.chartjs.org/) were used to build the page. Chart.js in particular is what is used for the interactive charts and does almost all of the work in making those charts. Bulma and Chart.js were chosen purely for the ability to build this web-based experience efficiently.
 
 ## About the Process
 
@@ -30,13 +24,11 @@ After looking at the `Culture` field I was curious to see what the `Medium` fiel
 
 I'd be interested to look (at a later time) in to trying to process the `Medium` field and also look at the departments which don't use the `Culture` field in case there's another field that's used instead.
 
----
-
 ## About the Data
 
 Data was downloaded from [https://github.com/metmuseum/openaccess/](https://github.com/metmuseum/openaccess/)
 
-The `data__wrangling/` folder contains the Jupyter Lab notebook used to process the data.
+The `data_wrangling/` folder contains the Jupyter Lab notebook used to process the data.
 
 The Met specifically asks the following:
 
